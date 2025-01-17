@@ -27,6 +27,23 @@ if ss is not None:
 else:
     acc = None
 
+# Required channels for force subscribe
+REQUIRED_CHANNELS = ["@JN2FLIX", "@ROCKERSBACKUP"]
+
+# Function to check user membership in channels
+async def is_user_member(user_id):
+    for channel in REQUIRED_CHANNELS:
+        try:
+            member = await bot.get_chat_member(channel, user_id)
+            if member.status not in ["member", "administrator", "creator"]:
+                return False
+        except UserNotParticipant:
+            return False
+        except Exception as e:
+            print(f"Error checking membership in {channel}: {e}")
+            return False
+    return True
+    
 # Download status
 def downstatus(statusfile, message):
     while True:
@@ -67,6 +84,18 @@ def progress(current, total, message, type):
 # Start command
 @bot.on_message(filters.command(["start"]))
 async def send_start(client: pyrogram.client.Client, message: pyrogram.types.messages_and_media.message.Message):
+    user_id = message.from_user.id
+    if not await is_user_member(user_id):
+        buttons = [[InlineKeyboardButton("Join Channel 1", url=f"https://t.me/{REQUIRED_CHANNELS[0][1:]}")],
+                   [InlineKeyboardButton("Join Channel 2", url=f"https://t.me/{REQUIRED_CHANNELS[1][1:]}")]]
+        await bot.send_message(
+            message.chat.id,
+            "**You must join the required channels to use this bot.**",
+            reply_markup=InlineKeyboardMarkup(buttons),
+            reply_to_message_id=message.id
+        )
+        return
+
     await bot.send_message(
         message.chat.id,
         f"**__👋 Hi** **{message.from_user.mention}**, **I am Save Restricted Bot, I can send you restricted content by its post link__**\n\n{USAGE}",
@@ -74,8 +103,22 @@ async def send_start(client: pyrogram.client.Client, message: pyrogram.types.mes
         reply_to_message_id=message.id
     )
 
+# Handler for text messages with force-subscribe check
 @bot.on_message(filters.text)
 async def save(client: pyrogram.client.Client, message: pyrogram.types.messages_and_media.message.Message):
+    user_id = message.from_user.id
+    if not await is_user_member(user_id):
+        buttons = [[InlineKeyboardButton("Join Channel 1", url=f"https://t.me/{REQUIRED_CHANNELS[0][1:]}")],
+                   [InlineKeyboardButton("Join Channel 2", url=f"https://t.me/{REQUIRED_CHANNELS[1][1:]}")]]
+        await bot.send_message(
+            message.chat.id,
+            "**You must join the required channels to use this bot.**",
+            reply_markup=InlineKeyboardMarkup(buttons),
+            reply_to_message_id=message.id
+        )
+        return
+
+    # Existing message handling logic
     print(message.text)
 
     # Joining chats
